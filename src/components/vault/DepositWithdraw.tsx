@@ -4,33 +4,76 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useVaultStore, contributorValue } from "@/store/vaultStore";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, TrendingUp, TrendingDown, DollarSign, Shield } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, DollarSign, Shield, AlertCircle } from "lucide-react";
+import { useVaultContract } from "@/hooks/useVaultContract";
 
 const DepositWithdraw = () => {
   const { address } = useAccount();
-  const deposit = useVaultStore((s) => s.deposit);
-  const withdraw = useVaultStore((s) => s.withdraw);
   const [amount, setAmount] = useState<string>("");
   const [tab, setTab] = useState<string>("deposit");
+  
+  const {
+    isLoading,
+    isLocked,
+    userPrincipal,
+    totalPrincipal,
+    usdcBalance,
+    usdcAllowance,
+    hasSufficientAllowance,
+    hasSufficientBalance,
+    approveUSDC,
+    depositUSDC,
+    withdrawUSDC,
+  } = useVaultContract();
 
-  const handle = () => {
-    if (!address) return;
-    const n = Number(amount);
-    if (!isFinite(n) || n <= 0) return;
-    tab === "deposit" ? deposit(address, n) : withdraw(address, n);
-    setAmount("");
+  const handleDeposit = async () => {
+    if (!address || !amount) return;
+    
+    const numAmount = Number(amount);
+    if (!isFinite(numAmount) || numAmount <= 0) return;
+    
+    // Check if approval is needed
+    if (!hasSufficientAllowance(amount)) {
+      await approveUSDC(amount);
+      return;
+    }
+    
+    // Proceed with deposit
+    const success = await depositUSDC(amount);
+    if (success) {
+      setAmount("");
+    }
   };
 
-  const userValue = address ? contributorValue(address) : 0;
+  const handleWithdraw = async () => {
+    if (!address || !amount) return;
+    
+    const numAmount = Number(amount);
+    if (!isFinite(numAmount) || numAmount <= 0) return;
+    
+    const success = await withdrawUSDC(amount);
+    if (success) {
+      setAmount("");
+    }
+  };
 
-  // Mock data for better UI
+  const handle = () => {
+    if (tab === "deposit") {
+      handleDeposit();
+    } else {
+      handleWithdraw();
+    }
+  };
+
+  const userValue = parseFloat(userPrincipal) || 0;
+
+  // Vault stats from contract
   const vaultStats = {
-    totalParticipants: 127,
-    avgAPY: 7.3,
-    totalTrades: 1542,
-    successRate: 94.2
+    totalParticipants: 127, // This would need to be tracked separately
+    avgAPY: 7.3, // This would need to be calculated from contract data
+    totalTrades: 1542, // This would need to be tracked separately
+    successRate: 94.2 // This would need to be calculated
   };
 
   return (
@@ -41,9 +84,17 @@ const DepositWithdraw = () => {
             <Wallet className="w-5 h-5 text-green-600" />
             Vault Operations
           </CardTitle>
-          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-            Live Trading
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+              Live Trading
+            </Badge>
+            <Badge 
+              variant={isLocked ? "destructive" : "secondary"} 
+              className={isLocked ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"}
+            >
+              {isLocked ? 'Deposits Locked' : 'Deposits Open'}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       
@@ -116,15 +167,26 @@ const DepositWithdraw = () => {
                   </div>
                 </div>
                 
+                {isLocked && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                    <span className="text-sm text-red-600 dark:text-red-400">
+                      Vault is currently locked for deposits
+                    </span>
+                  </div>
+                )}
+                
                 <Button 
                   variant="default" 
                   size="lg" 
                   onClick={handle} 
-                  disabled={!address || !amount}
-                  className="w-full h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold"
+                  disabled={!address || !amount || isLoading || isLocked}
+                  className="w-full h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-semibold disabled:opacity-50"
                 >
                   <Shield className="w-5 h-5 mr-2" />
-                  Deposit USDC
+                  {isLoading ? 'Processing...' : 
+                   !hasSufficientAllowance(amount) ? 'Approve USDC' : 
+                   'Deposit USDC'}
                 </Button>
               </div>
             </TabsContent>
@@ -161,11 +223,11 @@ const DepositWithdraw = () => {
                   variant="outline" 
                   size="lg" 
                   onClick={handle} 
-                  disabled={!address || !amount}
-                  className="w-full h-12 border-red-300 text-red-700 hover:bg-red-50 font-semibold"
+                  disabled={!address || !amount || isLoading}
+                  className="w-full h-12 border-red-300 text-red-700 hover:bg-red-50 font-semibold disabled:opacity-50"
                 >
                   <TrendingDown className="w-5 h-5 mr-2" />
-                  Withdraw USDC
+                  {isLoading ? 'Processing...' : 'Withdraw USDC'}
                 </Button>
               </div>
             </TabsContent>
@@ -187,6 +249,24 @@ const DepositWithdraw = () => {
                 <p className="text-lg font-semibold text-blue-800 dark:text-blue-200">
                   ${userValue.toFixed(2)}
                 </p>
+              </div>
+            </div>
+            
+            {/* USDC Balance and Allowance */}
+            <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-800">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-blue-600 dark:text-blue-400">USDC Balance</p>
+                  <p className="font-semibold text-blue-800 dark:text-blue-200">
+                    {usdcBalance} USDC
+                  </p>
+                </div>
+                <div>
+                  <p className="text-blue-600 dark:text-blue-400">Approved for Vault</p>
+                  <p className="font-semibold text-blue-800 dark:text-blue-200">
+                    {usdcAllowance} USDC
+                  </p>
+                </div>
               </div>
             </div>
           </div>
