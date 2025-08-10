@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useVaultStore } from "@/store/vaultStore";
+import { useVaultContract } from "@/hooks/useVaultContract";
 import { Pie, PieChart, Cell, Tooltip as ReTooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, DollarSign, Activity } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const COLORS = [
   "hsl(var(--primary))",
@@ -14,10 +14,21 @@ const COLORS = [
 ];
 
 const VaultStats = () => {
-  const totalUSDC = useVaultStore((s) => s.totalUSDC);
-  const holdings = useVaultStore((s) => s.holdings);
+  const { totalPrincipal, initializeMockData } = useVaultContract();
   const [selectedChart, setSelectedChart] = useState("pie");
 
+  // Initialize mock data when component mounts
+  useEffect(() => {
+    initializeMockData();
+  }, [initializeMockData]);
+
+  // Mock data for now - replace with real data when contracts are connected
+  const holdings = {
+    "USDC": parseFloat(totalPrincipal) || 0,
+    "ETH": 0,
+    "BTC": 0,
+  };
+  
   const data = Object.entries(holdings).map(([k, v]) => ({ name: k, value: v }));
   
   // Mock performance data for the line chart
@@ -71,7 +82,7 @@ const VaultStats = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-600 dark:text-slate-400">Total Balance</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">${totalUSDC.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">${parseFloat(totalPrincipal).toFixed(2)}</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
                 <DollarSign className="w-6 h-6 text-blue-600 dark:text-blue-400" />

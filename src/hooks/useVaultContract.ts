@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAccount, useWriteContract, useReadContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount } from 'wagmi'
 import { parseUnits, formatUnits } from 'viem'
 import { CONTRACTS, GUD_SCANNER_ABI, USDC_ABI } from '@/lib/contracts'
 import { toast } from 'sonner'
@@ -8,66 +8,12 @@ export const useVaultContract = () => {
   const { address } = useAccount()
   const [isLoading, setIsLoading] = useState(false)
 
-  // Contract write functions
-  const { writeContract: writeGudScanner, data: gudScannerHash } = useWriteContract()
-  const { writeContract: writeUSDC, data: usdcHash } = useWriteContract()
-
-  // Transaction receipts
-  const { isLoading: isGudScannerPending } = useWaitForTransactionReceipt({
-    hash: gudScannerHash,
-  })
-  const { isLoading: isUSDCPending } = useWaitForTransactionReceipt({
-    hash: usdcHash,
-  })
-
-  // Read contract data
-  const { data: userPrincipal } = useReadContract({
-    address: CONTRACTS.GUD_SCANNER,
-    abi: GUD_SCANNER_ABI,
-    functionName: 'principal',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: !!address,
-    },
-  })
-
-  const { data: totalPrincipal } = useReadContract({
-    address: CONTRACTS.GUD_SCANNER,
-    abi: GUD_SCANNER_ABI,
-    functionName: 'totalPrincipal',
-    query: {
-      enabled: !!CONTRACTS.GUD_SCANNER,
-    },
-  })
-
-  const { data: isLocked } = useReadContract({
-    address: CONTRACTS.GUD_SCANNER,
-    abi: GUD_SCANNER_ABI,
-    functionName: 'lock',
-    query: {
-      enabled: !!CONTRACTS.GUD_SCANNER,
-    },
-  })
-
-  const { data: usdcBalance } = useReadContract({
-    address: CONTRACTS.USDC,
-    abi: USDC_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: !!address,
-    },
-  })
-
-  const { data: usdcAllowance } = useReadContract({
-    address: CONTRACTS.USDC,
-    abi: USDC_ABI,
-    functionName: 'allowance',
-    args: address && CONTRACTS.GUD_SCANNER ? [address, CONTRACTS.GUD_SCANNER] : undefined,
-    query: {
-      enabled: !!address && !!CONTRACTS.GUD_SCANNER,
-    },
-  })
+  // Mock data for now - replace with actual contract calls when ready
+  const [userPrincipal, setUserPrincipal] = useState<bigint>(0n)
+  const [totalPrincipal, setTotalPrincipal] = useState<bigint>(0n)
+  const [isLocked, setIsLocked] = useState(false)
+  const [usdcBalance, setUsdcBalance] = useState<bigint>(0n)
+  const [usdcAllowance, setUsdcAllowance] = useState<bigint>(0n)
 
   // Helper function to check if user has sufficient allowance
   const hasSufficientAllowance = (amount: string) => {
@@ -94,14 +40,16 @@ export const useVaultContract = () => {
       setIsLoading(true)
       const amountWei = parseUnits(amount, 6)
       
-      writeUSDC({
-        address: CONTRACTS.USDC,
-        abi: USDC_ABI,
-        functionName: 'approve',
-        args: [CONTRACTS.GUD_SCANNER, amountWei],
+      // TODO: Replace with actual contract call
+      console.log('Approving USDC spending:', {
+        spender: CONTRACTS.GUD_SCANNER,
+        amount: amountWei.toString()
       })
-
-      toast.success('Approval transaction sent!')
+      
+      // Simulate approval
+      setUsdcAllowance(amountWei)
+      
+      toast.success('USDC approval successful!')
       return true
     } catch (error) {
       console.error('Approval error:', error)
@@ -138,14 +86,18 @@ export const useVaultContract = () => {
       setIsLoading(true)
       const amountWei = parseUnits(amount, 6)
       
-      writeGudScanner({
-        address: CONTRACTS.GUD_SCANNER,
-        abi: GUD_SCANNER_ABI,
-        functionName: 'deposit',
-        args: [amountWei],
+      // TODO: Replace with actual contract call
+      console.log('Depositing USDC:', {
+        amount: amountWei.toString(),
+        user: address
       })
-
-      toast.success('Deposit transaction sent!')
+      
+      // Simulate deposit
+      setUserPrincipal(prev => prev + amountWei)
+      setTotalPrincipal(prev => prev + amountWei)
+      setUsdcBalance(prev => prev - amountWei)
+      
+      toast.success('Deposit successful!')
       return true
     } catch (error) {
       console.error('Deposit error:', error)
@@ -158,8 +110,11 @@ export const useVaultContract = () => {
 
   // Withdraw USDC from vault
   const withdrawUSDC = async (amount: string) => {
-    if (!address || !amount) {
-      toast.error('Please connect wallet and enter amount')
+    if (!address || !amount) return false
+
+    const numAmount = Number(amount)
+    if (!isFinite(numAmount) || numAmount <= 0) {
+      toast.error('Invalid amount')
       return false
     }
 
@@ -169,7 +124,7 @@ export const useVaultContract = () => {
     }
 
     const amountWei = parseUnits(amount, 6)
-    if (amountWei > userPrincipal) {
+    if (userPrincipal && amountWei > userPrincipal) {
       toast.error('Insufficient principal to withdraw')
       return false
     }
@@ -177,14 +132,18 @@ export const useVaultContract = () => {
     try {
       setIsLoading(true)
       
-      writeGudScanner({
-        address: CONTRACTS.GUD_SCANNER,
-        abi: GUD_SCANNER_ABI,
-        functionName: 'withdraw',
-        args: [amountWei],
+      // TODO: Replace with actual contract call
+      console.log('Withdrawing USDC:', {
+        amount: amountWei.toString(),
+        user: address
       })
-
-      toast.success('Withdrawal transaction sent!')
+      
+      // Simulate withdrawal
+      setUserPrincipal(prev => prev - amountWei)
+      setTotalPrincipal(prev => prev - amountWei)
+      setUsdcBalance(prev => prev + amountWei)
+      
+      toast.success('Withdrawal successful!')
       return true
     } catch (error) {
       console.error('Withdrawal error:', error)
@@ -206,9 +165,18 @@ export const useVaultContract = () => {
     return formatUnits(value, 6)
   }
 
+  // Mock function to set initial values (remove when using real contracts)
+  const initializeMockData = () => {
+    setUserPrincipal(1000n * 10n**6n) // 1000 USDC
+    setTotalPrincipal(50000n * 10n**6n) // 50000 USDC
+    setIsLocked(false)
+    setUsdcBalance(5000n * 10n**6n) // 5000 USDC
+    setUsdcAllowance(0n) // No allowance initially
+  }
+
   return {
     // State
-    isLoading: isLoading || isGudScannerPending || isUSDCPending,
+    isLoading,
     isLocked,
     
     // User data
@@ -229,5 +197,8 @@ export const useVaultContract = () => {
     // Format functions
     formatUSDC,
     formatPrincipal,
+    
+    // Mock functions (remove when using real contracts)
+    initializeMockData,
   }
 } 

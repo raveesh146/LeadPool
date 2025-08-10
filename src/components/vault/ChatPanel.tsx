@@ -1,27 +1,59 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useVaultStore } from "@/store/vaultStore";
+
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, Bot, User, TrendingUp, TrendingDown, Activity, Zap, Shield, Wallet, Network } from "lucide-react";
 import { useState } from "react";
 
 const ChatPanel = () => {
-  const messages = useVaultStore((s) => s.messages);
-  const simulateTrade = useVaultStore((s) => s.simulateTrade);
-  const threshold = useVaultStore((s) => s.bullishThreshold);
+  // Local state for messages and simulation
+  const [messages, setMessages] = useState([
+    { id: 1, type: 'bot', content: 'Welcome to the AI Trading Agent! I\'m monitoring market conditions and will provide trading signals.', timestamp: new Date() },
+    { id: 2, type: 'bot', content: 'ETH showing bullish momentum with 87% confidence. Consider monitoring for entry opportunities.', timestamp: new Date() },
+  ]);
+  const [threshold] = useState(75);
   const [newMessage, setNewMessage] = useState("");
 
   const simulate = (direction: "BUY" | "SELL") => {
     const bullishScore = Math.floor(60 + Math.random() * 40);
     const leader = "0xLeaderWallet000000000000000000000000000000";
-    simulateTrade({ leader, symbol: "ETH", direction, usdcAmount: 500, bullishScore });
+    
+    // Simulate trade signal
+    const newMessage = {
+      id: Date.now(),
+      type: 'bot' as const,
+      content: `Trade signal: ${direction} ETH with ${bullishScore}% confidence. Leader wallet: ${leader.slice(0, 8)}...`,
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, newMessage]);
+    console.log('Trade simulation:', { leader, symbol: "ETH", direction, usdcAmount: 500, bullishScore });
   };
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
-      // Add user message to the store (you'd need to implement this)
+      // Add user message
+      const userMessage = {
+        id: Date.now(),
+        type: 'user' as const,
+        content: newMessage,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, userMessage]);
       setNewMessage("");
+      
+      // Simulate bot response
+      setTimeout(() => {
+        const botResponse = {
+          id: Date.now() + 1,
+          type: 'bot' as const,
+          content: 'Thank you for your message. I\'m analyzing the market and will provide insights shortly.',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, botResponse]);
+      }, 1000);
     }
   };
 
