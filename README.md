@@ -15,7 +15,7 @@ Using our *real-time on-chain indexer, we detect every swap the leader makes. In
 
 ---
 ![System Flow](flow2.png)
-![Trade Execution Flow](flow1.png)
+
 ## *How It Works*
 
 1.⁠ ⁠*Detect Leader Trades*
@@ -40,7 +40,8 @@ Using our *real-time on-chain indexer, we detect every swap the leader makes. In
    * ⁠ benchmark.png ⁠ and performance graphs illustrate this gain.
 
 ---
-
+## Flow
+![Trade Execution Flow](flow1.png)
 ## *Key Components*
 
 •⁠  ⁠*Zircuit L2 Contract*
@@ -67,6 +68,30 @@ Using our *real-time on-chain indexer, we detect every swap the leader makes. In
 
 ---
 
+```
+git clone <repo-url>
+cd <repo>
+cp config/env.example .env
+npm i
+
+```
+## Configure .env
+```
+ZIRCUIT_RPC_WS=wss://...
+ZIRCUIT_RPC_HTTP=https://...
+LEADER_ADDRESS=0xYourLeader...
+POOL_CONTRACT=0xDeployedPoolOnZircuit
+CDP_AGENTKIT_API_KEY=...
+CDP_AGENTKIT_WALLET_ID=...
+GUD_ENGINE_URL=https://...
+```
+
+## Run the indexer
+```
+cd services
+node uniV4_indexer.js
+```
+## Run Bitto Agent
 ## *Results*
 
 •⁠  ⁠100% of copied trades in our benchmark outperformed the leader’s output.
