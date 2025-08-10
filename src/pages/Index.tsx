@@ -25,10 +25,10 @@ const Index = () => {
                 AI-Powered Copy Trading
               </Badge>
               <h1 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-r from-slate-900 via-blue-800 to-purple-800 dark:from-white dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent mb-6">
-                Zircuit Copy Trading Vault
+                Zircuit Copy Trading Pool
               </h1>
               <p className="text-xl text-slate-600 dark:text-slate-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-                Shared USDC vault on Zircuit L2, executing AI-filtered copy trades via the GUD Trading Engine and temporary EIP-7702 delegation.
+                Shared USDC pool on Zircuit L2, executing AI-filtered copy trades via the GUD Trading Engine automated using Bitte Agents + CDP
               </p>
               
               {/* Feature Cards */}
