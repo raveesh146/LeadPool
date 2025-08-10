@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useVaultContract } from "@/hooks/useVaultContract";
+import { useGudEngineData } from "@/hooks/useGudEngineData";
 import { Pie, PieChart, Cell, Tooltip as ReTooltip, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, TrendingDown, DollarSign, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Activity, Zap, Database } from "lucide-react";
 import { useState } from "react";
 
 const COLORS = [
@@ -15,7 +16,12 @@ const COLORS = [
 
 const VaultStats = () => {
   const { totalPrincipal } = useVaultContract();
-  const [selectedChart, setSelectedChart] = useState("pie");
+  const { getChartData, getLatestMetrics, addConsoleData } = useGudEngineData();
+  const [selectedChart, setSelectedChart] = useState("gud");
+
+  // Get real-time GUD Engine data
+  const chartData = getChartData();
+  const latestMetrics = getLatestMetrics();
 
   // Mock data for now - replace with real data when contracts are connected
   const holdings = {
@@ -26,19 +32,8 @@ const VaultStats = () => {
   
   const data = Object.entries(holdings).map(([k, v]) => ({ name: k, value: v }));
   
-  // Mock performance data for the line chart
-  const performanceData = [
-    { day: "Mon", value: 10000 },
-    { day: "Tue", value: 10500 },
-    { day: "Wed", value: 10200 },
-    { day: "Thu", value: 10800 },
-    { day: "Fri", value: 11200 },
-    { day: "Sat", value: 11000 },
-    { day: "Sun", value: 11500 },
-  ];
-
   const totalValue = Object.values(holdings).reduce((sum, value) => sum + value, 0);
-  const changePercent = 5.2; // Mock data
+  const changePercent = latestMetrics ? (latestMetrics.avgDifference / latestMetrics.latestDestAmount * 100) : 0;
   const isPositive = changePercent > 0;
 
   return (
@@ -59,12 +54,28 @@ const VaultStats = () => {
               Distribution
             </Button>
             <Button
-              variant={selectedChart === "line" ? "default" : "outline"}
+              variant={selectedChart === "gud" ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedChart("line")}
+              onClick={() => setSelectedChart("gud")}
+              className="h-8 px-3"
+            >
+              GUD Engine
+            </Button>
+            <Button
+              variant={selectedChart === "performance" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedChart("performance")}
               className="h-8 px-3"
             >
               Performance
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedChart("console")}
+              className="h-8 px-3"
+            >
+              <Database className="w-4 h-4 mr-1" /> Console Data
             </Button>
           </div>
         </div>
@@ -72,7 +83,7 @@ const VaultStats = () => {
       
       <CardContent className="space-y-6">
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white dark:bg-slate-700 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -100,21 +111,39 @@ const VaultStats = () => {
           <div className="bg-white dark:bg-slate-700 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">7D Change</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Latest Swap</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-white">
+                  {latestMetrics ? `$${latestMetrics.latestDestAmount.toFixed(2)}` : 'N/A'}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+                <Zap className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white dark:bg-slate-700 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Avg Difference</p>
                 <div className="flex items-center gap-2">
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">{changePercent}%</p>
-                  {isPositive ? (
-                    <TrendingUp className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <TrendingDown className="w-5 h-5 text-red-600" />
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">
+                    {latestMetrics ? `${changePercent.toFixed(2)}%` : 'N/A'}
+                  </p>
+                  {latestMetrics && (
+                    changePercent > 0 ? (
+                      <TrendingUp className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <TrendingDown className="w-5 h-5 text-red-600" />
+                    )
                   )}
                 </div>
               </div>
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                isPositive ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
+                latestMetrics && changePercent > 0 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
               }`}>
                 <div className={`w-6 h-6 rounded-full ${
-                  isPositive ? 'bg-green-600' : 'bg-red-600'
+                  latestMetrics && changePercent > 0 ? 'bg-green-600' : 'bg-red-600'
                 }`}></div>
               </div>
             </div>
@@ -171,19 +200,55 @@ const VaultStats = () => {
                 </div>
               </div>
             </div>
-          ) : (
+          ) : selectedChart === "gud" ? (
             <div>
-              <h4 className="font-semibold text-slate-900 dark:text-white mb-4">Performance Over Time</h4>
+              <h4 className="font-semibold text-slate-900 dark:text-white mb-4">GUD Engine vs Uniswap V4 Real-time Data</h4>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={performanceData}>
+                  <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
+                    <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" />
                     <YAxis stroke="hsl(var(--muted-foreground))" />
                     <Tooltip cursor={{ fill: "transparent" }} />
                     <Line 
                       type="monotone" 
-                      dataKey="value" 
+                      dataKey="destAmount" 
+                      name="Uniswap V4 Amount"
+                      stroke="#3b82f6" 
+                      strokeWidth={3}
+                      dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: "#3b82f6", strokeWidth: 2 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="gudAmount" 
+                      name="GUD Engine Amount"
+                      stroke="#10b981" 
+                      strokeWidth={3}
+                      dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: "#10b981", strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+                <p>Blue line: Uniswap V4 actual swap amount | Green line: GUD Engine expected amount</p>
+                <p>Data updates in real-time as swaps occur on Base chain</p>
+              </div>
+            </div>
+          ) : selectedChart === "performance" ? (
+            <div>
+              <h4 className="font-semibold text-slate-900 dark:text-white mb-4">Performance Difference Over Time</h4>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" />
+                    <YAxis stroke="hsl(var(--muted-foreground))" />
+                    <Tooltip cursor={{ fill: "transparent" }} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="difference" 
                       stroke="hsl(var(--primary))" 
                       strokeWidth={3}
                       dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
@@ -192,8 +257,58 @@ const VaultStats = () => {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+              <div className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+                <p>Shows the difference between GUD Engine expected amount and Uniswap V4 actual amount</p>
+                <p>Positive values indicate GUD Engine overestimated, negative values indicate underestimation</p>
+              </div>
             </div>
-          )}
+          ) : selectedChart === "console" ? (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-slate-900 dark:text-white">Console Data (Last 5 Transactions)</h4>
+                <Button 
+                  onClick={addConsoleData}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Database className="w-4 h-4 mr-2" />
+                  Load Console Data
+                </Button>
+              </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" />
+                    <YAxis stroke="hsl(var(--muted-foreground))" />
+                    <Tooltip cursor={{ fill: "transparent" }} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="destAmount" 
+                      name="Uniswap V4 Amount"
+                      stroke="#3b82f6" 
+                      strokeWidth={3}
+                      dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: "#3b82f6", strokeWidth: 2 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="gudAmount" 
+                      name="GUD Engine Amount"
+                      stroke="#10b981" 
+                      strokeWidth={3}
+                      dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: "#10b981", strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+                <p>Click "Load Console Data" to immediately plot the last 5 transactions from your console</p>
+                <p>This will show real data from your indexer console logs</p>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Quick Stats */}
@@ -202,10 +317,10 @@ const VaultStats = () => {
             Total Assets: {Object.keys(holdings).length}
           </Badge>
           <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-            APY: 7.3%
+            Total Swaps: {latestMetrics ? latestMetrics.totalSwaps : 0}
           </Badge>
           <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
-            Risk Level: Low
+            Live Data: {chartData.length > 0 ? 'Active' : 'Waiting'}
           </Badge>
         </div>
       </CardContent>

@@ -146,7 +146,7 @@ export const useVaultContract = () => {
         functionName: 'deposit',
         args: [amountWei],
         account: address,
-        chain: undefined, // Use default chain
+        chain: 8453, // Use default chain
       })
       
       toast.success('Deposit transaction sent!')
