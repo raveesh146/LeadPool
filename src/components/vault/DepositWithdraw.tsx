@@ -1,8 +1,7 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useAccount } from "wagmi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import React from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -26,13 +25,7 @@ const DepositWithdraw = () => {
     approveUSDC,
     depositUSDC,
     withdrawUSDC,
-    initializeMockData,
   } = useVaultContract();
-
-  // Initialize mock data when component mounts
-  React.useEffect(() => {
-    initializeMockData();
-  }, [initializeMockData]);
 
   const handleDeposit = async () => {
     if (!address || !amount) return;

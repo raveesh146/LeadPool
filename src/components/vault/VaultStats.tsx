@@ -4,7 +4,7 @@ import { Pie, PieChart, Cell, Tooltip as ReTooltip, ResponsiveContainer, LineCha
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, DollarSign, Activity } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const COLORS = [
   "hsl(var(--primary))",
@@ -14,13 +14,8 @@ const COLORS = [
 ];
 
 const VaultStats = () => {
-  const { totalPrincipal, initializeMockData } = useVaultContract();
+  const { totalPrincipal } = useVaultContract();
   const [selectedChart, setSelectedChart] = useState("pie");
-
-  // Initialize mock data when component mounts
-  useEffect(() => {
-    initializeMockData();
-  }, [initializeMockData]);
 
   // Mock data for now - replace with real data when contracts are connected
   const holdings = {
