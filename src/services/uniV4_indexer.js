@@ -203,8 +203,31 @@ async function main() {
 
 			console.log("Step 1: Getting trade estimate...");
 			const estimate = await getTradeEstimate(QUOTE_REQUEST);
-			console.log("Expected Amount:", estimate.expectedAmount);
-			console.log("Min Expected Amount:", estimate.minexpectedAmount);
+			console.log("GUD Engine Amount:", estimate.expectedAmount);
+			
+			const difference = estimate.expectedAmount - destAmount;
+			console.log("Difference:", difference);
+
+			if (difference > 0) {
+				console.log("Difference is positive");
+			} else {
+				console.log("Difference is negative");
+			}
+
+			// Send data to frontend for real-time graphs
+			const swapData = {
+				destTokenAmount: parseFloat(destAmount),
+				gudEngineAmount: parseFloat(estimate.expectedAmount),
+				difference: parseFloat(difference),
+				srcToken: srcToken,
+				destToken: destToken,
+				senderAddress: originator,
+			};
+
+			// Dispatch custom event to send data to React components
+			if (typeof window !== 'undefined') {
+				window.dispatchEvent(new CustomEvent('gudSwapData', { detail: swapData }));
+			}
 		}
 	);
 

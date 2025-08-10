@@ -25,7 +25,7 @@ const VaultHeader = () => {
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                Zircuit Copilot
+                GUD Engine
               </span>
               <span className="text-xs text-blue-200/70">AI-Powered Copy Trading</span>
             </div>
